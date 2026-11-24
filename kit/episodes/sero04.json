@@ -1,0 +1,28 @@
+{
+  "id": "sero04",
+  "slug": "週120分の自然",
+  "question": "1週間で、自然の中に何分いる？",
+  "questionHl": [{"w": "自然", "c": "amber"}],
+  "counters": {
+    "left": {"label": "今週の自然時間", "from": 0, "to": 0, "unit": "分"},
+    "right": {"label": "今週の自然時間", "from": 0, "to": 120, "unit": "分"}
+  },
+  "scenes": [
+    {"type": "compare", "left": "phone_sofa", "right": "walk"},
+    {"type": "stat", "to": 120, "prefix": "週", "suffix": "分", "label": "自然の中で週120分以上 →\n健康・幸福感が高い傾向", "labelHl": [{"w": "健康・幸福感", "c": "amber"}], "source": "約2万人の調査 / White et al. (2019) Scientific Reports"},
+    {"type": "stat", "to": 17, "prefix": "1日", "suffix": "分", "label": "まとめても、分けてもOK", "labelHl": [{"w": "分けてもOK", "c": "amber"}]},
+    {"type": "compare", "left": "slump", "right": "sun_stretch"}
+  ],
+  "lines": [
+    {"scene": 0, "text": "1週間で、自然の中に何分いる？", "hl": [{"w": "自然", "c": "amber"}]},
+    {"scene": 0, "text": "ドパガキは、休みの日もずっと家でスマホ。", "hl": [{"w": "スマホ", "c": "blue"}]},
+    {"scene": 0, "text": "セロガキは、公園を歩いて外で過ごす。", "hl": [{"w": "公園", "c": "amber"}]},
+    {"scene": 1, "text": "約2万人を調べた研究では、自然の中で週に120分以上過ごす人ほど、", "sub": "約2万人を調べた研究では\n自然の中で週120分以上過ごす人ほど", "hl": [{"w": "週120分", "c": "amber"}]},
+    {"scene": 1, "text": "健康で、気分もいいと答える割合が高かった。", "hl": [{"w": "健康", "c": "amber"}]},
+    {"scene": 2, "text": "120分は、1日にすると、たった17分。", "hl": [{"w": "17分", "c": "amber"}]},
+    {"scene": 2, "text": "まとめて行っても、分けて行っても、同じでした。"},
+    {"scene": 3, "text": "スマホを置いて、今日17分だけ、外に出てみて。", "hl": [{"w": "17分", "c": "amber"}, {"w": "スマホ", "c": "blue"}]}
+  ],
+  "thumb": {"title": "自然の中に\n週120分", "hl": [{"w": "週120分", "c": "amber"}], "sub": "1日たった17分でいい", "subHl": [{"w": "17分", "c": "amber"}], "t": 1.5},
+  "caption": "captions/sero04.txt"
+}
