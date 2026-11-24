@@ -301,16 +301,54 @@ function sceneCompare(ctx, sc, t, T, canvas) {
   floorLine(ctx, 1); reflect(ctx, canvas);
 }
 function sceneStat(ctx, sc, t) {
-  // 大きな数字(カウントアップ)+説明
+  // 大きな数字(カウントアップ)+下で棒人間が演技。説明文は出さない(字幕と重複させない)
   const k = ease(clamp((t - 0.2) / 1.1));
   const v = lerp(sc.from ?? 0, sc.to, k);
   const txt = (sc.prefix || '') + (sc.decimals ? v.toFixed(sc.decimals) : Math.round(v)) + (sc.suffix || '');
   const col = C[sc.color || 'amber'];
   ctx.textAlign = 'center'; ctx.fillStyle = col; ctx.shadowColor = col === C.blue ? C.blueGlow : C.amberGlow; ctx.shadowBlur = 50;
-  ctx.font = `900 230px ${FONT}`; ctx.fillText(txt, W / 2, 1000 + (1 - clamp(t / 0.4)) * 40);
+  ctx.font = `900 200px ${FONT}`; ctx.fillText(txt, W / 2, 860 + (1 - clamp(t / 0.4)) * 40);
   ctx.shadowBlur = 0; ctx.textAlign = 'left';
-  ctx.save(); ctx.globalAlpha = clamp((t - 0.5) / 0.4); richText(ctx, sc.label, sc.labelHl, W / 2, 1130, 52, 900); ctx.restore();
-  if (sc.source) { ctx.save(); ctx.globalAlpha = 0.55 * clamp((t - 0.8) / 0.4); ctx.fillStyle = C.gray; ctx.font = `500 30px ${FONT}`; ctx.textAlign = 'center'; ctx.fillText(sc.source, W / 2, 1290); ctx.restore(); }
+  act(ctx, sc.act || 'cheer', sc.color === 'blue' ? 'dopa' : 'sero', W / 2, t, 0);
+}
+function sceneWeek(ctx, sc, t) {
+  // 1週間(月〜日)の棒が1日ずつ伸び、合計がカウントアップする
+  const days = ['月', '火', '水', '木', '金', '土', '日'];
+  const per = sc.perDay, maxV = sc.max || per * 1.6;
+  const base = 1240, hMax = 380, bw = 96, gap = 128, x0 = W / 2 - gap * 3;
+  let total = 0;
+  days.forEach((d, i) => {
+    const k = ease(clamp((t - 0.2 - i * 0.28) / 0.45));
+    total += per * k;
+    const x = x0 + i * gap, h = hMax * per / maxV * k;
+    ctx.fillStyle = C.dim; ctx.beginPath(); ctx.roundRect(x - bw / 2, base - hMax, bw, hMax, 12); ctx.globalAlpha = 0.25; ctx.fill(); ctx.globalAlpha = 1;
+    ctx.fillStyle = C.amber; ctx.shadowColor = C.amberGlow; ctx.shadowBlur = 24 * k;
+    ctx.beginPath(); ctx.roundRect(x - bw / 2, base - h, bw, Math.max(h, 0.1), 12); ctx.fill(); ctx.shadowBlur = 0;
+    // 小さな歩く棒人間がその日の棒の上に乗る
+    if (k > 0.05) { ctx.save(); ctx.globalAlpha = k; drawFig(ctx, x, base - h - 48, 0.3, walkPose(t + i), 'sero'); ctx.restore(); }
+    ctx.fillStyle = C.gray; ctx.font = `700 36px ${FONT}`; ctx.textAlign = 'center'; ctx.fillText(d, x, base + 56);
+    if (k > 0.6) { ctx.globalAlpha = clamp((k - 0.6) / 0.4); ctx.fillStyle = C.white; ctx.font = `800 32px ${FONT}`; ctx.fillText(`${per}分`, x, base - h - 110); ctx.globalAlpha = 1; }
+  });
+  // 合計
+  const done = total >= per * 7 - 0.01;
+  const tot = done ? (sc.total ?? per * 7) : Math.min(sc.total ?? per * 7, Math.round(total));
+  ctx.textAlign = 'center'; ctx.fillStyle = C.amber; ctx.shadowColor = C.amberGlow; ctx.shadowBlur = 40;
+  ctx.font = `900 120px ${FONT}`; ctx.fillText(`${sc.totalPrefix ?? '合計'} ${tot}分`, W / 2, 780); ctx.shadowBlur = 0; ctx.textAlign = 'left';
+}
+function sceneCrowd(ctx, sc, t) {
+  // たくさんの人(研究の対象人数)が集まってくる+人数のカウンター
+  const cols = 14, rows = 6, sx = 66, sy = 78, x0 = W / 2 - sx * (cols - 1) / 2, y0 = 840;
+  const rng = (i) => (Math.sin(i * 12.9898) * 43758.5453) % 1;
+  for (let r = 0; r < rows; r++) for (let c = 0; c < cols; c++) {
+    const i = r * cols + c; const d = Math.abs(rng(i)) * 1.2;
+    const a = clamp((t - 0.15 - d) / 0.3); if (a <= 0) continue;
+    const glow = sc.glowFrac && Math.abs(rng(i + 99)) < sc.glowFrac && t > (sc.glowAt ?? 99);
+    ctx.save(); ctx.globalAlpha = a; drawFig(ctx, x0 + c * sx, y0 + r * sy + 40, 0.24, POSES.stand, glow ? 'sero' : 'dopa'); ctx.restore();
+  }
+  const k = ease(clamp((t - 0.1) / 1.4));
+  const n = Math.round(lerp(0, sc.to, k));
+  ctx.textAlign = 'center'; ctx.fillStyle = C.white; ctx.font = `900 110px ${FONT}`; ctx.shadowColor = C.amberGlow; ctx.shadowBlur = 20;
+  ctx.fillText((sc.prefix || '') + n.toLocaleString('en-US') + (sc.suffix || '人'), W / 2, 780); ctx.shadowBlur = 0; ctx.textAlign = 'left';
 }
 function sceneBars(ctx, sc, t) {
   // 2本の縦棒で比較
@@ -334,7 +372,7 @@ function sceneChart(ctx, sc, t) {
   // 右肩上がり/下がりの折れ線
   const x0 = 170, x1 = 930, y0 = 1220, y1 = 760;
   ctx.strokeStyle = C.dim; ctx.lineWidth = 4; ctx.beginPath(); ctx.moveTo(x0, y1 - 20); ctx.lineTo(x0, y0); ctx.lineTo(x1 + 20, y0); ctx.stroke();
-  ctx.fillStyle = C.gray; ctx.font = `700 34px ${FONT}`; ctx.textAlign = 'center'; ctx.fillText(sc.xlabel || '', (x0 + x1) / 2, y0 + 70);
+  ctx.fillStyle = C.gray; ctx.font = `700 34px ${FONT}`; ctx.textAlign = 'center'; ctx.fillText(sc.xlabel || '', (x0 + x1) / 2, y0 + 105);
   ctx.save(); ctx.translate(x0 - 50, (y0 + y1) / 2); ctx.rotate(-Math.PI / 2); ctx.fillText(sc.ylabel || '', 0, 0); ctx.restore();
   const pts = sc.points; const k = ease(clamp((t - 0.2) / 1.6));
   const n = pts.length - 1; const upto = k * n;
@@ -344,8 +382,17 @@ function sceneChart(ctx, sc, t) {
   for (let i = 0; i <= Math.floor(upto); i++) { const X = lerp(x0, x1, i / n), Y = lerp(y0, y1, pts[i]); i ? ctx.lineTo(X, Y) : ctx.moveTo(X, Y); }
   if (upto < n) { const i = Math.floor(upto), f = upto - i; ctx.lineTo(lerp(x0, x1, (i + f) / n), lerp(y0, y1, lerp(pts[i], pts[i + 1], f))); }
   ctx.stroke(); ctx.shadowBlur = 0; ctx.textAlign = 'left';
-  if (sc.title) richText(ctx, sc.title, sc.titleHl, W / 2, 680, 50, 920);
-  if (sc.source) { ctx.fillStyle = C.gray; ctx.globalAlpha = 0.55; ctx.font = `500 30px ${FONT}`; ctx.textAlign = 'center'; ctx.fillText(sc.source, W / 2, 1385); ctx.globalAlpha = 1; ctx.textAlign = 'left'; }
+  // 先頭の光る点
+  { const i = Math.min(Math.floor(upto), n - 1), f = upto - i; const X = lerp(x0, x1, (i + f) / n), Y = lerp(y0, y1, lerp(pts[i], pts[Math.min(i + 1, n)], f));
+    ctx.fillStyle = C.white; ctx.shadowColor = C.amberGlow; ctx.shadowBlur = 40; ctx.beginPath(); ctx.arc(X, Y, 14, 0, Math.PI * 2); ctx.fill(); ctx.shadowBlur = 0; }
+  // 目盛り
+  (sc.ticks || []).forEach(tk => { const X = lerp(x0, x1, tk.x); ctx.fillStyle = C.gray; ctx.font = `700 32px ${FONT}`; ctx.textAlign = 'center'; ctx.fillText(tk.label, X, y0 + 44); });
+  // しきい値の縦線
+  if (sc.marker) { const X = lerp(x0, x1, sc.marker.x); const a = clamp((upto / n - sc.marker.x) / 0.08);
+    ctx.save(); ctx.globalAlpha = a; ctx.strokeStyle = C.amber; ctx.lineWidth = 4; ctx.setLineDash([12, 12]); ctx.beginPath(); ctx.moveTo(X, y0); ctx.lineTo(X, y1 - 40); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle = C.amber; ctx.shadowColor = C.amberGlow; ctx.shadowBlur = 24; ctx.font = `900 64px ${FONT}`; ctx.textAlign = 'center'; ctx.fillText(sc.marker.label, X, y1 - 70); ctx.restore(); }
+  ctx.textAlign = 'left';
+  if (sc.source) { ctx.fillStyle = C.gray; ctx.globalAlpha = 0.5; ctx.font = `500 28px ${FONT}`; ctx.textAlign = 'center'; ctx.fillText(sc.source, W / 2, 1385); ctx.globalAlpha = 1; ctx.textAlign = 'left'; }
 }
 function sceneTips(ctx, sc, t) {
   // 今日からできること(順に出る)
@@ -357,7 +404,7 @@ function sceneTips(ctx, sc, t) {
     richText(ctx, it, sc.hl, 210, y, 46, 760, 'left'); ctx.restore();
   });
 }
-const SCENES = { compare: sceneCompare, stat: sceneStat, bars: sceneBars, chart: sceneChart, tips: sceneTips };
+const SCENES = { compare: sceneCompare, stat: sceneStat, bars: sceneBars, chart: sceneChart, tips: sceneTips, week: sceneWeek, crowd: sceneCrowd };
 
 const canvas = createCanvas(W, H); const ctx = canvas.getContext('2d');
 const layer = createCanvas(W, H); const lctx = layer.getContext('2d');
